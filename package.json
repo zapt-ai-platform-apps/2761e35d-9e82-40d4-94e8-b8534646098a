@@ -1,7 +1,7 @@
 {
-    "name": "reactjs-vite-tailwind-vercel",
+    "name": "chess-robot-app",
     "version": "1.0.0",
-    "description": "ReactJS app with Vite, Tailwind",
+    "description": "Chess app to play against a robot",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -13,7 +13,7 @@
         "@sentry/browser": "^8.41.0",
         "chess.js": "^1.0.0-beta.6",
         "react": "^18.2.0",
-        "react-chessboard": "^4.3.4",
+        "react-chessboard": "^4.3.1",
         "react-dom": "^18.2.0"
     },
     "devDependencies": {

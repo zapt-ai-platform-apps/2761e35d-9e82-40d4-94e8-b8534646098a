@@ -1,214 +1,125 @@
-import { Chess } from 'chess.js';
+import { Chess, Move } from 'chess.js';
 
-export interface ChessMove {
-  from: string;
-  to: string;
-  promotion?: string;
+/**
+ * @typedef {Object} ChessMoveResult
+ * @property {boolean} success If the move was successful
+ * @property {string | null} error Error message if move failed
+ * @property {Move | null} move The move object if successful
+ */
+export interface ChessMoveResult {
+  success: boolean;
+  error: string | null;
+  move: Move | null;
 }
 
-export type ChessPieceType = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
-export type ChessColor = 'w' | 'b';
-
-export interface ChessPiece {
-  type: ChessPieceType;
-  color: ChessColor;
+/**
+ * @typedef {Object} GameStatus
+ * @property {boolean} isCheck If the current player is in check
+ * @property {boolean} isCheckmate If the current player is in checkmate
+ * @property {boolean} isDraw If the game is a draw
+ * @property {boolean} isGameOver If the game is over
+ * @property {string} turn Current turn ('w' or 'b')
+ */
+export interface GameStatus {
+  isCheck: boolean;
+  isCheckmate: boolean;
+  isDraw: boolean;
+  isGameOver: boolean;
+  turn: 'w' | 'b';
 }
 
-export interface Square {
-  square: string;
-  piece: ChessPiece | null;
+/**
+ * @typedef {Object} ChessGameState
+ * @property {Chess} game The chess.js game instance
+ * @property {GameStatus} status Current game status
+ * @property {string[]} moveHistory Array of moves in SAN notation
+ * @property {string} fen Current board position in FEN notation
+ */
+export interface ChessGameState {
+  game: Chess;
+  status: GameStatus;
+  moveHistory: string[];
+  fen: string;
 }
 
-export type ChessBoard = Square[][];
+/**
+ * @typedef {Object} CapturedPieces
+ * @property {string[]} white Pieces captured by white
+ * @property {string[]} black Pieces captured by black
+ */
+export interface CapturedPieces {
+  white: string[];
+  black: string[];
+}
 
-export function createChessGame() {
-  const chess = new Chess();
-  
+/**
+ * Get the current game status from a chess instance
+ */
+export function getGameStatus(chess: Chess): GameStatus {
   return {
-    getBoard: (): ChessBoard => {
-      const board: ChessBoard = [];
-      for (let i = 0; i < 8; i++) {
-        board[i] = [];
-        for (let j = 0; j < 8; j++) {
-          const file = String.fromCharCode(97 + j);
-          const rank = 8 - i;
-          const square = `${file}${rank}`;
-          const piece = chess.get(square);
-          board[i][j] = {
-            square,
-            piece: piece ? { type: piece.type as ChessPieceType, color: piece.color as ChessColor } : null
-          };
-        }
-      }
-      return board;
-    },
-    
-    makeMove: (move: ChessMove): boolean => {
-      try {
-        chess.move(move);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-    
-    undo: (): void => {
-      chess.undo();
-    },
-    
-    getValidMoves: (square: string): string[] => {
-      const moves = chess.moves({ square, verbose: true });
-      return moves.map(move => move.to);
-    },
-    
-    isGameOver: (): boolean => {
-      return chess.isGameOver();
-    },
-    
-    isCheck: (): boolean => {
-      return chess.isCheck();
-    },
-    
-    isCheckmate: (): boolean => {
-      return chess.isCheckmate();
-    },
-    
-    isDraw: (): boolean => {
-      return chess.isDraw();
-    },
-    
-    getTurn: (): ChessColor => {
-      return chess.turn() as ChessColor;
-    },
-    
-    getFen: (): string => {
-      return chess.fen();
-    },
-    
-    getMoveHistory: () => {
-      return chess.history({ verbose: true });
-    },
-    
-    resetGame: () => {
-      chess.reset();
-    },
-    
-    // Add a simple AI that picks a random valid move
-    makeRandomMove: (): ChessMove | null => {
-      const moves = chess.moves({ verbose: true });
-      if (moves.length === 0) return null;
-      
-      const randomIndex = Math.floor(Math.random() * moves.length);
-      const move = moves[randomIndex];
-      
-      chess.move(move);
-      
-      return {
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion,
-      };
-    },
-    
-    // Add a slightly smarter AI that tries to capture pieces when possible
-    makeSmartMove: (): ChessMove | null => {
-      const moves = chess.moves({ verbose: true });
-      if (moves.length === 0) return null;
-      
-      // First priority: capturing moves
-      const capturingMoves = moves.filter(move => move.flags.includes('c'));
-      if (capturingMoves.length > 0) {
-        const randomCapture = capturingMoves[Math.floor(Math.random() * capturingMoves.length)];
-        chess.move(randomCapture);
-        return {
-          from: randomCapture.from,
-          to: randomCapture.to,
-          promotion: randomCapture.promotion,
-        };
-      }
-      
-      // Otherwise, make a random move
-      const randomIndex = Math.floor(Math.random() * moves.length);
-      const move = moves[randomIndex];
-      
-      chess.move(move);
-      
-      return {
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion,
-      };
-    },
-    
-    // Add a more advanced AI that evaluates board position
-    makeAdvancedMove: (): ChessMove | null => {
-      const moves = chess.moves({ verbose: true });
-      if (moves.length === 0) return null;
-      
-      // Evaluate each move and select the best one
-      let bestScore = -Infinity;
-      let bestMove = moves[0];
-      
-      for (const move of moves) {
-        chess.move(move);
-        const score = evaluatePosition(chess);
-        chess.undo();
-        
-        // Negative because we're evaluating from the opponent's perspective
-        if (-score > bestScore) {
-          bestScore = -score;
-          bestMove = move;
-        }
-      }
-      
-      chess.move(bestMove);
-      
-      return {
-        from: bestMove.from,
-        to: bestMove.to,
-        promotion: bestMove.promotion,
-      };
-    }
+    isCheck: chess.isCheck(),
+    isCheckmate: chess.isCheckmate(),
+    isDraw: chess.isDraw(),
+    isGameOver: chess.isGameOver(),
+    turn: chess.turn()
   };
 }
 
-// Simple position evaluation function
-function evaluatePosition(chess: Chess): number {
-  if (chess.isCheckmate()) return -Infinity; // Being checkmated is worst
-  if (chess.isDraw()) return 0; // Draws are neutral
+/**
+ * Calculate captured pieces based on the current board position
+ */
+export function calculateCapturedPieces(chess: Chess): CapturedPieces {
+  const fen = chess.fen();
+  const piecesInFen = fen.split(' ')[0];
   
-  // Material values
-  const pieceValues: Record<ChessPieceType, number> = {
-    p: 1,
-    n: 3,
-    b: 3,
-    r: 5,
-    q: 9,
-    k: 0 // King isn't counted for material
+  // Count pieces on the board
+  const pieceCounts = {
+    p: 0, n: 0, b: 0, r: 0, q: 0, k: 0,
+    P: 0, N: 0, B: 0, R: 0, Q: 0, K: 0
   };
   
-  let score = 0;
+  // Standard starting counts
+  const startingCounts = {
+    p: 8, n: 2, b: 2, r: 2, q: 1, k: 1,
+    P: 8, N: 2, B: 2, R: 2, Q: 1, K: 1
+  };
   
-  // Calculate material advantage
-  const board = chess.board();
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      const piece = board[i][j];
-      if (piece) {
-        const value = pieceValues[piece.type as ChessPieceType];
-        if (piece.color === chess.turn()) {
-          score += value;
-        } else {
-          score -= value;
-        }
-      }
+  // Count pieces on the board
+  for (const char of piecesInFen) {
+    if (pieceCounts.hasOwnProperty(char)) {
+      pieceCounts[char as keyof typeof pieceCounts]++;
     }
   }
   
-  // Add bonus for checking the opponent
-  if (chess.isCheck()) score += 0.5;
+  // Calculate captured pieces
+  const capturedByWhite = [];
+  const capturedByBlack = [];
   
-  return score;
+  for (const piece of ['p', 'n', 'b', 'r', 'q']) {
+    const blackCaptured = startingCounts[piece] - pieceCounts[piece];
+    for (let i = 0; i < blackCaptured; i++) {
+      capturedByWhite.push(piece);
+    }
+    
+    const whiteCaptured = startingCounts[piece.toUpperCase()] - pieceCounts[piece.toUpperCase()];
+    for (let i = 0; i < whiteCaptured; i++) {
+      capturedByBlack.push(piece.toUpperCase());
+    }
+  }
+  
+  return {
+    white: capturedByWhite,
+    black: capturedByBlack
+  };
 }
 
-export type ChessGame = ReturnType<typeof createChessGame>;
+/**
+ * Convert FEN piece notation to unicode chess symbols
+ */
+export function pieceToUnicode(piece: string): string {
+  const pieceMap: Record<string, string> = {
+    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟',
+    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙'
+  };
+  return pieceMap[piece] || piece;
+}

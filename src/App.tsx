@@ -1,15 +1,11 @@
 import './index.css';
-import ChessGame from './features/chess';
-import ZaptBadge from './components/ZaptBadge';
+import ChessGame from '@/screens/ChessGame';
+import ZaptBadge from '@/components/chess/ZaptBadge';
 
 const App = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-gray-900">
-      <h1 className="text-4xl font-bold mb-4">Chess Game</h1>
-      <p className="text-lg mb-6">Play against the computer!</p>
-      
+    <div className="min-h-screen bg-gray-100 text-gray-900">
       <ChessGame />
-      
       <ZaptBadge />
     </div>
   );
